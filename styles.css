@@ -1045,3 +1045,13 @@ textarea:focus, input:focus-visible { outline: 2px solid color-mix(in srgb, var(
   .pane-empty strong { color: #d8dee8; }
   .pane-tree-toolbar { background: rgba(28,35,45,.94); }
 }
+
+/* A ação principal de entrada permanece junto do conteúdo que controla. */
+.compact-actions #updateSlotBtn {
+  flex: 1 1 auto;
+}
+
+.compact-actions #clearTextMemoryBtn,
+.compact-actions #clearFileMemoryBtn {
+  flex: 0 0 auto;
+}

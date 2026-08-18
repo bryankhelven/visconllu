@@ -92,15 +92,12 @@
         <label class="textarea-label" for="conlluInput">Cole ou edite CoNLL-U</label>
         <textarea id="conlluInput" spellcheck="false" autocomplete="off" placeholder="# sent_id = 1&#10;# text = A pesquisadora analisou os dados.&#10;1&#9;A&#9;o&#9;DET&#9;_&#9;Gender=Fem|Number=Sing&#9;2&#9;det&#9;_&#9;_&#10;..."></textarea>
         <div class="input-actions compact-actions">
+          <button id="updateSlotBtn" class="button primary" type="button">Exibir árvore</button>
           <button id="clearTextMemoryBtn" class="button secondary" type="button">Limpar texto</button>
         </div>
       </div>
 
       <div id="memoryStateNote" class="memory-state-note" aria-live="polite"></div>
-
-      <div class="update-slot-row">
-        <button id="updateSlotBtn" class="button primary" type="button">Atualizar A na visualização</button>
-      </div>
 
       <div id="validationBox" class="validation-box" hidden aria-live="polite"></div>
     </section>
