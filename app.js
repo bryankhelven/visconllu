@@ -12,15 +12,6 @@
 3\tanalisou\tanalisar\tVERB\t_\tMood=Ind|Number=Sing|Person=3|Tense=Past|VerbForm=Fin\t0\troot\t_\t_
 4\tos\to\tDET\t_\tDefinite=Def|Gender=Masc|Number=Plur|PronType=Art\t5\tdet\t_\t_
 5\tdados\tdado\tNOUN\t_\tGender=Masc|Number=Plur\t3\tobj\t_\tSpaceAfter=No
-6\t.\t.\tPUNCT\t_\t_\t3\tpunct\t_\t_
-
-# sent_id = exemplo-2
-# text = Árvores sintáticas tornam relações visíveis.
-1\tÁrvores\tárvore\tNOUN\t_\tGender=Fem|Number=Plur\t3\tnsubj\t_\t_
-2\tsintáticas\tsintático\tADJ\t_\tGender=Fem|Number=Plur\t1\tamod\t_\t_
-3\ttornam\ttornar\tVERB\t_\tMood=Ind|Number=Plur|Person=3|Tense=Pres|VerbForm=Fin\t0\troot\t_\t_
-4\trelações\trelação\tNOUN\t_\tGender=Fem|Number=Plur\t3\tobj\t_\t_
-5\tvisíveis\tvisível\tADJ\t_\tNumber=Plur\t4\txcomp\t_\tSpaceAfter=No
 6\t.\t.\tPUNCT\t_\t_\t3\tpunct\t_\t_`;
 
   const SAMPLE_B = SAMPLE_A.replace("3\tobj\t_\tSpaceAfter=No", "3\tobl\t_\tSpaceAfter=No");
@@ -66,9 +57,9 @@
     "memoryFileTab", "memoryTextTab", "fileMemoryPanel", "textMemoryPanel", "dropZone", "fileInput", "fileInfo", "fileName", "fileDetails", "filePreviewDetails", "filePreview", "clearFileMemoryBtn",
     "textSlotLetter", "sampleBtn", "conlluInput", "clearTextMemoryBtn", "memoryStateNote", "updateSlotBtn", "validationBox",
     "viewerStats", "emptyState", "viewerUi", "rawBtn", "dynamicFeatures",
-    "singleView", "singleSlotA", "singleSlotB", "prevBtn", "nextBtn", "sentenceNumber", "sentenceTotal", "updateSingleBtn", "singleDirtyNotice", "sentId", "sentText", "singleRenderStatus", "svgwell", "rawConllu",
+    "singleView", "singleSlotA", "singleSlotB", "prevBtn", "nextBtn", "sentenceNumber", "sentenceTotal", "singleDirtyNotice", "sentId", "sentText", "singleRenderStatus", "svgwell", "rawConllu",
     "singleZoomOut", "singleZoomReset", "singleZoomIn", "singleZoomFit", "downloadSvgBtn", "downloadPngBtn",
-    "continuousView", "continuousSlotA", "continuousSlotB", "updateContinuousBtn", "continuousDirtyNotice", "continuousSummary", "continuousZoomOut", "continuousZoomReset", "continuousZoomIn", "continuousZoomFit", "downloadAllSvgBtn", "continuousRenderStatus", "continuousWell",
+    "continuousView", "continuousSlotA", "continuousSlotB", "continuousDirtyNotice", "continuousSummary", "continuousZoomOut", "continuousZoomReset", "continuousZoomIn", "continuousZoomFit", "downloadAllSvgBtn", "continuousRenderStatus", "continuousWell",
     "compareView", "sideBySideBtn", "stackedBtn", "alignSentIdBtn", "updateBothBtn", "compareRenderStatus", "compareGrid",
     "compareTitleA", "compareTitleB", "compareSourceA", "compareSourceB", "lockCompareA", "lockCompareB", "dirtyNoticeA", "dirtyNoticeB", "compareSentenceA", "compareSentenceB", "updateCompareA", "updateCompareB", "compareIdA", "compareIdB", "compareTextA", "compareTextB", "compareTreeA", "compareTreeB", "compareRawA", "compareRawB",
     "zoomOutA", "zoomResetA", "zoomInA", "zoomFitA", "zoomOutB", "zoomResetB", "zoomInB", "zoomFitB", "downloadCompareA", "downloadCompareB"
@@ -160,14 +151,12 @@
     el.prevBtn.addEventListener("click", () => moveSentence(state.singleSlot, -1, "single"));
     el.nextBtn.addEventListener("click", () => moveSentence(state.singleSlot, 1, "single"));
     el.sentenceNumber.addEventListener("change", () => setSentenceIndex(state.singleSlot, Number(el.sentenceNumber.value) - 1, "single"));
-    el.updateSingleBtn.addEventListener("click", () => updateSlotSnapshot(state.singleSlot));
     bindZoom("single", el.singleZoomOut, el.singleZoomReset, el.singleZoomIn, el.singleZoomFit);
     el.downloadSvgBtn.addEventListener("click", () => downloadSlotSvg(state.singleSlot));
     el.downloadPngBtn.addEventListener("click", () => downloadSlotPng(state.singleSlot));
 
     el.continuousSlotA.addEventListener("click", () => setContinuousSlot("A"));
     el.continuousSlotB.addEventListener("click", () => setContinuousSlot("B"));
-    el.updateContinuousBtn.addEventListener("click", () => updateSlotSnapshot(state.continuousSlot));
     bindZoom("continuous", el.continuousZoomOut, el.continuousZoomReset, el.continuousZoomIn, el.continuousZoomFit);
     el.downloadAllSvgBtn.addEventListener("click", () => downloadAllSvgZip(state.continuousSlot));
 
@@ -662,7 +651,10 @@
     el.lockSlotBtn.textContent = slot.locked ? `Desfixar ${slot.name}` : `Fixar ${slot.name}`;
     el.lockSlotBtn.classList.toggle("active-lock", slot.locked);
     el.lockSlotBtn.disabled = !slot.snapshot && !slot.locked;
-    el.updateSlotBtn.textContent = `Atualizar ${slot.name} na visualização`;
+    el.updateSlotBtn.textContent =
+      slot.snapshot && isDirty(slot.name)
+        ? "Atualizar árvore"
+        : "Exibir árvore";
     el.updateSlotBtn.disabled = slot.locked || !mem.content.trim();
 
     const dirty = isDirty(slot.name);
@@ -717,8 +709,6 @@
     const snap = snapshotOf(state.singleSlot);
     el.singleSlotA.disabled = !snapshotOf("A");
     el.singleSlotB.disabled = !snapshotOf("B");
-    el.updateSingleBtn.textContent = `↻ Atualizar ${state.singleSlot}`;
-    el.updateSingleBtn.disabled = state.slots[state.singleSlot].locked || !memoryOf(state.slots[state.singleSlot]).content.trim();
     syncDirtyNotice(el.singleDirtyNotice, state.singleSlot);
     el.prevBtn.disabled = !snap || snap.current <= 0;
     el.nextBtn.disabled = !snap || snap.current >= snap.doc.sentences.length - 1;
@@ -733,8 +723,6 @@
     el.continuousSlotA.disabled = !snapshotOf("A");
     el.continuousSlotB.disabled = !snapshotOf("B");
     const snap = snapshotOf(state.continuousSlot);
-    el.updateContinuousBtn.textContent = `↻ Atualizar ${state.continuousSlot}`;
-    el.updateContinuousBtn.disabled = state.slots[state.continuousSlot].locked || !memoryOf(state.slots[state.continuousSlot]).content.trim();
     syncDirtyNotice(el.continuousDirtyNotice, state.continuousSlot);
     el.continuousSummary.textContent = snap ? `${slotSnapshotLabel(state.continuousSlot)} · ${snap.doc.sentences.length} sentença(s)` : "";
     el.downloadAllSvgBtn.disabled = !snap;
