@@ -306,8 +306,11 @@
     if (parsed.validation.warnings.length) showValidation("warning", messages.concat(parsed.validation.warnings.slice(0, 4)), Math.max(0, parsed.validation.warnings.length - 4));
     else showValidation("success", messages);
 
-    if (!snapshotOf(state.singleSlot)) state.singleSlot = name;
-    if (!snapshotOf(state.continuousSlot)) state.continuousSlot = name;
+    // A entrada que acabou de ser exibida/atualizada passa a ser
+    // a entrada ativa nos modos individuais.
+    state.singleSlot = name;
+    state.continuousSlot = name;
+
     refreshDynamicFeatures();
     syncAllUi();
     await renderSlotImpact(name);
