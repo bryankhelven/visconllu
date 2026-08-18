@@ -19,6 +19,7 @@ Isso permite, por exemplo, manter **A fixa como referência** e editar repetidam
 
 ## Funcionalidades
 
+- **Texto é a entrada inicial padrão**; o upload de arquivo permanece disponível como opção secundária no seletor;
 - upload independente de `.conllu`, `.conll` ou `.txt` em A e B;
 - drag & drop;
 - nome e tamanho do arquivo carregado em cada memória;

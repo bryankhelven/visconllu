@@ -28,8 +28,6 @@
   const STORAGE = {
     textA: "visconllu:v1:text:A",
     textB: "visconllu:v1:text:B",
-    activeKindA: "visconllu:v1:kind:A",
-    activeKindB: "visconllu:v1:kind:B",
     showRaw: "visconllu:v1:raw",
   };
 
@@ -41,7 +39,7 @@
     return {
       name,
       role: name === "A" ? "Referência" : "Candidato",
-      activeKind: "file",
+      activeKind: "text",
       file: blankMemory("file"),
       text: blankMemory("text"),
       snapshot: null,
@@ -93,10 +91,8 @@
     try {
       state.slots.A.text.content = sessionStorage.getItem(STORAGE.textA) || "";
       state.slots.B.text.content = sessionStorage.getItem(STORAGE.textB) || "";
-      const kindA = sessionStorage.getItem(STORAGE.activeKindA);
-      const kindB = sessionStorage.getItem(STORAGE.activeKindB);
-      if (kindA === "file" || kindA === "text") state.slots.A.activeKind = kindA;
-      if (kindB === "file" || kindB === "text") state.slots.B.activeKind = kindB;
+      state.slots.A.activeKind = "text";
+      state.slots.B.activeKind = "text";
       state.showRaw = sessionStorage.getItem(STORAGE.showRaw) === "1";
     } catch (_) {}
   }
@@ -105,9 +101,6 @@
     try { sessionStorage.setItem(name === "A" ? STORAGE.textA : STORAGE.textB, state.slots[name].text.content); } catch (_) {}
   }
 
-  function persistKind(name) {
-    try { sessionStorage.setItem(name === "A" ? STORAGE.activeKindA : STORAGE.activeKindB, state.slots[name].activeKind); } catch (_) {}
-  }
 
   function bindEvents() {
     el.slotTabA.addEventListener("click", () => editSlot("A"));
@@ -151,7 +144,7 @@
       if (slot.locked) return;
       slot.activeKind = "text";
       slot.text.content = slot.name === "A" ? SAMPLE_A : SAMPLE_B;
-      persistKind(slot.name); persistText(slot.name);
+      persistText(slot.name);
       syncAllUi();
     });
     el.clearFileMemoryBtn.addEventListener("click", () => clearMemory(state.editingSlot, "file"));
@@ -220,7 +213,6 @@
     const slot = activeEditingSlot();
     if (slot.locked) return;
     slot.activeKind = kind;
-    persistKind(slot.name);
     syncAllUi();
   }
 
@@ -231,7 +223,6 @@
       const content = await file.text();
       slot.file = { kind: "file", content: U.normalizeNewlines(content), filename: file.name, size: file.size };
       slot.activeKind = "file";
-      persistKind(name);
       if (state.editingSlot !== name) state.editingSlot = name;
       showMemoryValidation(name);
       syncAllUi();

@@ -56,11 +56,11 @@
       </div>
 
       <div class="memory-type-tabs" role="tablist" aria-label="Tipo da memória ativa">
-        <button id="memoryFileTab" class="memory-type active" type="button">Arquivo</button>
-        <button id="memoryTextTab" class="memory-type" type="button">Texto</button>
+        <button id="memoryTextTab" class="memory-type active" type="button">Texto</button>
+        <button id="memoryFileTab" class="memory-type" type="button">Arquivo</button>
       </div>
 
-      <div id="fileMemoryPanel" class="memory-panel">
+      <div id="fileMemoryPanel" class="memory-panel" hidden>
         <label id="dropZone" class="drop-zone" for="fileInput" tabindex="0">
           <input id="fileInput" type="file" accept=".conllu,.conll,.txt,text/plain" />
           <span class="drop-icon" aria-hidden="true">⇩</span>
@@ -81,7 +81,7 @@
         </div>
       </div>
 
-      <div id="textMemoryPanel" class="memory-panel" hidden>
+      <div id="textMemoryPanel" class="memory-panel">
         <div class="text-source-heading">
           <div>
             <strong>Texto da entrada <span id="textSlotLetter">A</span></strong>
