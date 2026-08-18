@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Visualizador e comparador local de árvores de dependência CoNLL-U em SVG." />
+  <meta name="color-scheme" content="light dark" />
+  <title>VisCoNLL-U</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script defer src="./conllu-utils.js"></script>
+  <script defer src="./tree-renderer.js"></script>
+  <script defer src="./zip-utils.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir para o conteúdo</a>
+
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">↳</div>
+      <div>
+        <h1>VisCoNLL-U</h1>
+        <p>Visualize, teste e compare árvores de dependência em SVG</p>
+      </div>
+    </div>
+    <div class="privacy-badge" title="Os dados permanecem no navegador"><span aria-hidden="true">◉</span> processamento local</div>
+  </header>
+
+  <main id="main" class="layout">
+    <section class="card input-card" aria-labelledby="input-title">
+      <div class="card-heading compact-heading">
+        <div>
+          <p class="eyebrow">Entradas</p>
+          <h2 id="input-title">Duas memórias independentes</h2>
+          <p class="heading-help">Use A como referência fixa e B como versão mutável, ou carregue quaisquer dois CoNLL-U.</p>
+        </div>
+      </div>
+
+      <div class="slot-tabs" role="tablist" aria-label="Entrada a editar">
+        <button id="slotTabA" class="slot-tab active" type="button" role="tab" aria-selected="true">
+          <span class="slot-letter">A</span>
+          <span><strong>Referência</strong><small id="slotStatusA">vazia</small></span>
+        </button>
+        <button id="slotTabB" class="slot-tab" type="button" role="tab" aria-selected="false">
+          <span class="slot-letter">B</span>
+          <span><strong>Candidato</strong><small id="slotStatusB">vazia</small></span>
+        </button>
+      </div>
+
+      <div class="slot-header-row">
+        <div>
+          <span id="editingSlotBadge" class="editing-slot-badge">A</span>
+          <strong id="editingSlotTitle">Referência A</strong>
+        </div>
+        <button id="lockSlotBtn" class="button secondary small" type="button">Fixar A</button>
+      </div>
+
+      <div class="memory-type-tabs" role="tablist" aria-label="Tipo da memória ativa">
+        <button id="memoryFileTab" class="memory-type active" type="button">Arquivo</button>
+        <button id="memoryTextTab" class="memory-type" type="button">Texto</button>
+      </div>
+
+      <div id="fileMemoryPanel" class="memory-panel">
+        <label id="dropZone" class="drop-zone" for="fileInput" tabindex="0">
+          <input id="fileInput" type="file" accept=".conllu,.conll,.txt,text/plain" />
+          <span class="drop-icon" aria-hidden="true">⇩</span>
+          <span><strong>Escolha um arquivo</strong> ou arraste-o para cá</span>
+          <small>.conllu, .conll ou .txt em UTF-8</small>
+        </label>
+        <div id="fileInfo" class="source-info" hidden>
+          <span class="source-info-label">Em memória</span>
+          <strong id="fileName"></strong>
+          <span id="fileDetails" class="source-info-details"></span>
+        </div>
+        <details id="filePreviewDetails" class="source-preview" hidden>
+          <summary>Ver CoNLL-U carregado</summary>
+          <pre id="filePreview" class="input-preview"><code></code></pre>
+        </details>
+        <div class="input-actions compact-actions">
+          <button id="clearFileMemoryBtn" class="button secondary" type="button">Limpar arquivo</button>
+        </div>
+      </div>
+
+      <div id="textMemoryPanel" class="memory-panel" hidden>
+        <div class="text-source-heading">
+          <div>
+            <strong>Texto da entrada <span id="textSlotLetter">A</span></strong>
+            <small>Este rascunho não altera a outra entrada.</small>
+          </div>
+          <button id="sampleBtn" class="button ghost small" type="button">Usar exemplo</button>
+        </div>
+        <label class="textarea-label" for="conlluInput">Cole ou edite CoNLL-U</label>
+        <textarea id="conlluInput" spellcheck="false" autocomplete="off" placeholder="# sent_id = 1&#10;# text = A pesquisadora analisou os dados.&#10;1&#9;A&#9;o&#9;DET&#9;_&#9;Gender=Fem|Number=Sing&#9;2&#9;det&#9;_&#9;_&#10;..."></textarea>
+        <div class="input-actions compact-actions">
+          <button id="clearTextMemoryBtn" class="button secondary" type="button">Limpar texto</button>
+        </div>
+      </div>
+
+      <div id="memoryStateNote" class="memory-state-note" aria-live="polite"></div>
+
+      <div class="update-slot-row">
+        <button id="updateSlotBtn" class="button primary" type="button">Atualizar A na visualização</button>
+      </div>
+
+      <div id="validationBox" class="validation-box" hidden aria-live="polite"></div>
+    </section>
+
+    <section id="viewerCard" class="card viewer-card" aria-labelledby="viewer-title">
+      <div class="card-heading viewer-heading">
+        <div>
+          <p class="eyebrow">Visualização</p>
+          <h2 id="viewer-title">Árvores de dependência</h2>
+        </div>
+        <div id="viewerStats" class="file-stats">A e B ainda não foram renderizadas</div>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-tree" aria-hidden="true"><span>root</span><i></i><i></i><i></i></div>
+        <h3>Atualize A ou B para começar</h3>
+        <p>Cada lado mantém sua própria memória e seu próprio snapshot renderizado.</p>
+      </div>
+
+      <div id="viewerUi" hidden>
+        <div class="main-toolbar">
+          <div class="view-mode-group" role="group" aria-label="Modo de visualização">
+            <button class="mode-button active" data-view-mode="single" type="button">Uma por vez</button>
+            <button class="mode-button" data-view-mode="continuous" type="button">Contínuo</button>
+            <button class="mode-button" data-view-mode="compare" type="button">Comparar</button>
+          </div>
+          <div class="viewer-action-group">
+            <button id="rawBtn" class="button secondary small" type="button">CoNLL-U abaixo</button>
+          </div>
+        </div>
+
+        <details class="display-options">
+          <summary>Atributos exibidos</summary>
+          <div class="feature-grid" id="featureGrid">
+            <label><input type="checkbox" value="FORM" checked disabled /> FORM</label>
+            <label><input class="feature-toggle" type="checkbox" value="UPOS" checked /> UPOS</label>
+            <label><input class="feature-toggle" type="checkbox" value="LEMMA" checked /> LEMMA</label>
+            <label><input class="feature-toggle" type="checkbox" value="XPOS" /> XPOS</label>
+            <span id="dynamicFeatures" class="dynamic-features"></span>
+          </div>
+        </details>
+
+        <div id="singleView" class="view-panel active-view">
+          <div class="single-source-bar">
+            <div class="slot-choice" role="group" aria-label="Entrada visualizada">
+              <button id="singleSlotA" class="slot-choice-btn active" type="button">A</button>
+              <button id="singleSlotB" class="slot-choice-btn" type="button">B</button>
+            </div>
+            <div class="nav-group" aria-label="Navegação entre sentenças">
+              <button id="prevBtn" class="icon-button" type="button">←</button>
+              <label class="sentence-jump" for="sentenceNumber"><span>Sentença</span><input id="sentenceNumber" type="number" min="1" value="1" /><span id="sentenceTotal">/ 1</span></label>
+              <button id="nextBtn" class="icon-button" type="button">→</button>
+            </div>
+            <button id="updateSingleBtn" class="button secondary small" type="button">↻ Atualizar A</button>
+          </div>
+          <div id="singleDirtyNotice" class="pane-dirty-notice" hidden></div>
+          <div class="sentence-meta"><div><span class="meta-label">ID</span><span id="sentId" class="mono">—</span></div><p id="sentText">—</p></div>
+          <div id="singleRenderStatus" class="render-status" aria-live="polite"></div>
+          <div class="tree-local-toolbar">
+            <div class="zoom-group" aria-label="Zoom da árvore">
+              <button id="singleZoomOut" class="icon-button" type="button">−</button>
+              <button id="singleZoomReset" class="zoom-value" type="button">100%</button>
+              <button id="singleZoomIn" class="icon-button" type="button">+</button>
+              <button id="singleZoomFit" class="button secondary small" type="button">Ajustar</button>
+            </div>
+            <div class="export-group"><button id="downloadSvgBtn" class="button secondary small" type="button">SVG</button><button id="downloadPngBtn" class="button secondary small" type="button">PNG</button></div>
+          </div>
+          <div id="svgwell" class="svg-stage" aria-label="Árvore sintática renderizada"></div>
+          <pre id="rawConllu" class="raw-conllu" hidden><code></code></pre>
+        </div>
+
+        <div id="continuousView" class="view-panel" hidden>
+          <div class="continuous-header">
+            <div class="slot-choice" role="group" aria-label="Entrada contínua">
+              <button id="continuousSlotA" class="slot-choice-btn active" type="button">A</button>
+              <button id="continuousSlotB" class="slot-choice-btn" type="button">B</button>
+            </div>
+            <button id="updateContinuousBtn" class="button secondary small" type="button">↻ Atualizar A</button>
+          </div>
+          <div id="continuousDirtyNotice" class="pane-dirty-notice" hidden></div>
+          <div id="continuousSummary" class="subtle-status"></div>
+          <div class="tree-local-toolbar">
+            <div class="zoom-group">
+              <button id="continuousZoomOut" class="icon-button" type="button">−</button>
+              <button id="continuousZoomReset" class="zoom-value" type="button">100%</button>
+              <button id="continuousZoomIn" class="icon-button" type="button">+</button>
+              <button id="continuousZoomFit" class="button secondary small" type="button">Ajustar</button>
+            </div>
+            <button id="downloadAllSvgBtn" class="button ghost small" type="button">Todos os SVGs em ZIP</button>
+          </div>
+          <div id="continuousRenderStatus" class="render-status" aria-live="polite"></div>
+          <div id="continuousWell" class="continuous-well"></div>
+        </div>
+
+        <div id="compareView" class="view-panel" hidden>
+          <div class="compare-master-toolbar">
+            <div class="compare-layout-group">
+              <button id="sideBySideBtn" class="mode-button active" type="button">Lado a lado</button>
+              <button id="stackedBtn" class="mode-button" type="button">Empilhado</button>
+            </div>
+            <div class="compare-master-actions">
+              <button id="alignSentIdBtn" class="button secondary small" type="button">Alinhar por sent_id</button>
+              <button id="updateBothBtn" class="button secondary small" type="button">↻ Atualizar ambos</button>
+            </div>
+          </div>
+          <div id="compareRenderStatus" class="render-status" aria-live="polite"></div>
+
+          <div id="compareGrid" class="compare-grid side-by-side">
+            <article class="compare-pane" data-pane="A">
+              <header class="compare-pane-header">
+                <div><span class="compare-letter">A</span><div><strong id="compareTitleA">Referência A</strong><small id="compareSourceA">—</small></div></div>
+                <button id="lockCompareA" class="button secondary small" type="button">Fixar A</button>
+              </header>
+              <div id="dirtyNoticeA" class="pane-dirty-notice" hidden></div>
+              <div class="pane-controls-row">
+                <label>Sentença <input id="compareSentenceA" type="number" min="1" value="1" /></label>
+                <button id="updateCompareA" class="button secondary small" type="button">↻ Atualizar A</button>
+              </div>
+              <div class="compare-meta"><span id="compareIdA">—</span><p id="compareTextA">—</p></div>
+              <div class="tree-local-toolbar pane-tree-toolbar">
+                <div class="zoom-group">
+                  <button id="zoomOutA" class="icon-button" type="button">−</button>
+                  <button id="zoomResetA" class="zoom-value" type="button">100%</button>
+                  <button id="zoomInA" class="icon-button" type="button">+</button>
+                  <button id="zoomFitA" class="button secondary small" type="button">Ajustar</button>
+                </div>
+                <button id="downloadCompareA" class="button ghost small" type="button">Baixar SVG</button>
+              </div>
+              <div id="compareTreeA" class="svg-stage compare-stage"></div>
+              <pre id="compareRawA" class="raw-conllu" hidden><code></code></pre>
+            </article>
+
+            <article class="compare-pane" data-pane="B">
+              <header class="compare-pane-header">
+                <div><span class="compare-letter">B</span><div><strong id="compareTitleB">Candidato B</strong><small id="compareSourceB">—</small></div></div>
+                <button id="lockCompareB" class="button secondary small" type="button">Fixar B</button>
+              </header>
+              <div id="dirtyNoticeB" class="pane-dirty-notice" hidden></div>
+              <div class="pane-controls-row">
+                <label>Sentença <input id="compareSentenceB" type="number" min="1" value="1" /></label>
+                <button id="updateCompareB" class="button secondary small" type="button">↻ Atualizar B</button>
+              </div>
+              <div class="compare-meta"><span id="compareIdB">—</span><p id="compareTextB">—</p></div>
+              <div class="tree-local-toolbar pane-tree-toolbar">
+                <div class="zoom-group">
+                  <button id="zoomOutB" class="icon-button" type="button">−</button>
+                  <button id="zoomResetB" class="zoom-value" type="button">100%</button>
+                  <button id="zoomInB" class="icon-button" type="button">+</button>
+                  <button id="zoomFitB" class="button secondary small" type="button">Ajustar</button>
+                </div>
+                <button id="downloadCompareB" class="button ghost small" type="button">Baixar SVG</button>
+              </div>
+              <div id="compareTreeB" class="svg-stage compare-stage"></div>
+              <pre id="compareRawB" class="raw-conllu" hidden><code></code></pre>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer"><p>Renderização SVG local. A e B têm memórias, snapshots, zoom e atualização independentes.</p></footer>
+  <noscript>Este visualizador precisa de JavaScript ativado.</noscript>
+</body>
+</html>
